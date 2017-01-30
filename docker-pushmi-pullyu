@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+trap 'echo "$0: line $LINENO: exit status of last command: $?" 1>&2' ERR
+trap 'cleanup' EXIT
+
+cleanup() {
+  if [ -n "${registry_container_name-}" ] && docker ps -q -f name="$registry_container_name"
+  then
+    echo "Killing registry..."
+    docker kill "$registry_container_name" || true
+    docker rm "$registry_container_name" || true
+  fi
+}
+
+usage() {
+  echo "
+Usage:	$0 IMAGE [USER@]HOSTNAME
+
+Push an image directly to a remote host (without a separate registry)"
+}
+
+if [ "$#" -ne 2 ]
+then
+  echo "\"$0\" requires exactly 2 arguments."
+  usage
+  exit 1
+fi
+
+image_name="$1"
+deploy_target="$2"
+
+registry_port=5000
+registry_host="localhost"
+
+echo "Running a registry at $registry_host:$registry_port..."
+registry_container_name=$(
+  docker run --detach --publish="$registry_port:$registry_port" registry:2
+)
+
+echo "Pushing $image_name to $registry_host:$registry_port..."
+docker tag "$image_name" "$registry_host:$registry_port/$image_name"
+docker push "$registry_host:$registry_port/$image_name"
+
+echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
+ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" \
+  docker pull "$registry_host/$image_name"
