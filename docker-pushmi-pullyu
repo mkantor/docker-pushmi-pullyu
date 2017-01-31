@@ -44,5 +44,7 @@ docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" \
-  docker pull "$registry_host:$registry_port/$image_name"
+ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" sh <<EOF
+  docker pull "$registry_host:$registry_port/$image_name" \
+    && docker tag "$registry_host:$registry_port/$image_name" "$image_name"
+EOF
