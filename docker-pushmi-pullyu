@@ -8,7 +8,7 @@ trap 'cleanup' EXIT
 cleanup() {
   if [ -n "${registry_container_name-}" ] && docker ps -q -f name="$registry_container_name"
   then
-    echo "Killing registry..."
+    echo "Killing the registry..."
     docker kill "$registry_container_name" || true
     docker rm "$registry_container_name" || true
   fi
