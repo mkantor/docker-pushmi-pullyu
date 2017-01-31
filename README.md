@@ -1,6 +1,6 @@
 # Docker Pushmi-Pullyu
 
-A script to push Docker images directly to a remote host without using Docker 
+A script to copy a Docker image directly to a remote host without using Docker 
 Hub or a hosted registry.
 
 The implementation pushes the image to a temporary local registry then pulls 
