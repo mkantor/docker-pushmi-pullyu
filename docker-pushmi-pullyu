@@ -43,6 +43,7 @@ registry_container_name=$(
 echo "Pushing $image_name to $registry_host:$registry_port..."
 docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
+docker rmi "$registry_host:$registry_port/$image_name"
 
 tags=$(docker inspect $image_name -f '{{index .RepoTags}}' | tr -d '[' | tr -d ']' | tr ' ' '\n' | grep ^$image_name: | grep -v latest | cut -d':' -f 2 | tr '\n' ' ')
 
