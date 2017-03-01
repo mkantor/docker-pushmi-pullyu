@@ -42,6 +42,7 @@ registry_container_name=$(
 echo "Pushing $image_name to $registry_host:$registry_port..."
 docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
+docker rmi "$registry_host:$registry_port/$image_name"
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
 ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" sh <<EOF
