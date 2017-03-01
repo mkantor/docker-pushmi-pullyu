@@ -16,20 +16,21 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 IMAGE [USER@]HOSTNAME
+Usage:	$0 IMAGE [USER@]HOSTNAME [ADDITIONAL_SSH_PARAMETERS]
 
 Push an image directly to a remote host (without a separate registry)"
 }
 
-if [ "$#" -ne 2 ]
+if [ "$#" -lt 2 ]
 then
-  echo "\"$0\" requires exactly 2 arguments."
+  echo "\"$0\" requires at least 2 arguments."
   usage
   exit 1
 fi
 
-image_name="$1"
-deploy_target="$2"
+image_name="$1"; shift
+deploy_target="$1"; shift
+ssh_arguments="$@"
 
 registry_port=5000
 registry_host="localhost"
@@ -42,9 +43,13 @@ registry_container_name=$(
 echo "Pushing $image_name to $registry_host:$registry_port..."
 docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
+docker rmi "$registry_host:$registry_port/$image_name"
+
+tags=$(docker inspect $image_name -f '{{index .RepoTags}}' | tr -d '[' | tr -d ']' | tr ' ' '\n' | grep ^$image_name: | grep -v latest | cut -d':' -f 2 | tr '\n' ' ')
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" sh <<EOF
+ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" $ssh_arguments sh <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
-    && docker tag "$registry_host:$registry_port/$image_name" "$image_name"
+    && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
+    && for tag in $tags; do docker tag "$registry_host:$registry_port/$image_name" "$image_name:\$tag"; done
 EOF
