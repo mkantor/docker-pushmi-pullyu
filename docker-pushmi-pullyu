@@ -16,12 +16,13 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 [OPTION...] IMAGE [USER@]HOSTNAME
+Usage:	$0 [OPTION...] IMAGE  [USER@]HOSTNAME
 
 Push an image directly to a remote host (without a separate registry)
 
 Options:
-	-e          specify the remote shell to use"
+	-e                       specify the remote shell to use"
+	-a,--push-all-tags     also push all local image\'s tags on remote
 }
 
 if [ "$#" -lt 2 ]
@@ -37,6 +38,9 @@ while [ -n "${1+x}" ]
 	("-e")
 		shift;
 		remote_shell=$1
+		;;
+	(-a|--push-all-tags)
+		push_all_tags=true
 		;;
 	(*)
 		if [ -z "${image_name+x}" ]
@@ -83,12 +87,15 @@ echo "Pushing $image_name to $registry_host:$registry_port..."
 docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
 
-tags=$(docker inspect $image_name -f '{{index .RepoTags}}' | tr -d '[' | tr -d ']' | tr ' ' '\n' | grep ^$image_name: | grep -v latest | cut -d':' -f 2 | tr '\n' ' ')
+if [ -n "${push_all_tags+x}" ]
+then
+	tags=$(docker inspect "$image_name" -f '{{index .RepoTags}}' | tr -d '[' | tr -d ']' | tr ' ' '\n' | grep "^$image_name:" | grep -v latest | cut -d':' -f 2 | tr '\n' ' ')
+fi
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
 cmd="$remote_shell -R '$registry_port:$registry_host:$registry_port' '$deploy_target' sh"
 eval $cmd <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
     && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
-    && for tag in $tags; do docker tag "$registry_host:$registry_port/$image_name" "$image_name:\$tag"; done
+    && for tag in ${tags:-}; do docker tag "$registry_host:$registry_port/$image_name" "$image_name:\$tag"; done
 EOF
