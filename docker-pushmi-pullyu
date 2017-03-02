@@ -16,20 +16,60 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 IMAGE [USER@]HOSTNAME
+Usage:	$0 [OPTION...] IMAGE [USER@]HOSTNAME
 
-Push an image directly to a remote host (without a separate registry)"
+Push an image directly to a remote host (without a separate registry)
+
+Options:
+	-e          specify the remote shell to use"
 }
 
-if [ "$#" -ne 2 ]
+if [ "$#" -lt 2 ]
 then
-  echo "\"$0\" requires exactly 2 arguments."
+  echo "\"$0\" requires at least 2 arguments."
   usage
   exit 1
 fi
 
-image_name="$1"
-deploy_target="$2"
+while [ -n "${1+x}" ]
+	do
+		case "$1" in
+	("-e")
+		shift;
+		remote_shell=$1
+		;;
+	(*)
+		if [ -z "${image_name+x}" ]
+		then
+			image_name=$1
+		elif [ -z "${deploy_target+x}" ]
+		then
+			deploy_target=$1
+		else
+			echo "Bad argument: $1" 1>&2
+			exit 64
+		fi
+		;;
+	esac
+	shift;
+done
+
+if [ -z "${remote_shell+x}" ] 
+then
+	remote_shell="ssh"
+fi
+if [ -z "${image_name+x}" ] 
+then
+	echo "missing argument 'IMAGE'."
+	usage
+  exit 1
+fi
+if [ -z "${deploy_target+x}" ] 
+then
+	echo "missing argument '[USER@]HOSTNAME'."
+	usage
+  exit 1
+fi
 
 registry_port=5000
 registry_host="localhost"
@@ -46,7 +86,8 @@ docker push "$registry_host:$registry_port/$image_name"
 tags=$(docker inspect $image_name -f '{{index .RepoTags}}' | tr -d '[' | tr -d ']' | tr ' ' '\n' | grep ^$image_name: | grep -v latest | cut -d':' -f 2 | tr '\n' ' ')
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" sh <<EOF
+cmd="$remote_shell -R '$registry_port:$registry_host:$registry_port' '$deploy_target' sh"
+eval $cmd <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
     && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
     && for tag in $tags; do docker tag "$registry_host:$registry_port/$image_name" "$image_name:\$tag"; done
