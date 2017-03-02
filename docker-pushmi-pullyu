@@ -16,9 +16,12 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 IMAGE [USER@]HOSTNAME [ADDITIONAL_SSH_PARAMETERS]
+Usage:	$0 [OPTION...] IMAGE  [USER@]HOSTNAME
 
-Push an image directly to a remote host (without a separate registry)"
+Push an image directly to a remote host (without a separate registry)
+
+Options:
+	-e          specify the remote shell to use"
 }
 
 if [ "$#" -lt 2 ]
@@ -28,9 +31,45 @@ then
   exit 1
 fi
 
-image_name="$1"; shift
-deploy_target="$1"; shift
-ssh_arguments="$@"
+while [ -n "${1+x}" ]
+	do
+		case "$1" in
+	("-e")
+		shift;
+		remote_shell=$1
+		;;
+	(*)
+		if [ -z "${image_name+x}" ]
+		then
+			image_name=$1
+		elif [ -z "${deploy_target+x}" ]
+		then
+			deploy_target=$1
+		else
+			echo "Bad argument: $1" 1>&2
+			exit 64
+		fi
+		;;
+	esac
+	shift;
+done
+
+if [ -z "${remote_shell+x}" ] 
+then
+	remote_shell="ssh"
+fi
+if [ -z "${image_name+x}" ] 
+then
+	echo "missing argument 'IMAGE'."
+	usage
+  exit 1
+fi
+if [ -z "${deploy_target+x}" ] 
+then
+	echo "missing argument '[USER@]HOSTNAME'."
+	usage
+  exit 1
+fi
 
 registry_port=5000
 registry_host="localhost"
@@ -45,7 +84,8 @@ docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" $ssh_arguments sh <<EOF
+cmd="$remote_shell -R '$registry_port:$registry_host:$registry_port' '$deploy_target' sh"
+eval $cmd <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
     && docker tag "$registry_host:$registry_port/$image_name" "$image_name"
 EOF
