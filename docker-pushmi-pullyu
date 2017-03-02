@@ -48,5 +48,6 @@ docker rmi "$registry_host:$registry_port/$image_name"
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
 ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" $ssh_arguments sh <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
-    && docker tag "$registry_host:$registry_port/$image_name" "$image_name"
+    && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
+    && docker rmi "$registry_host:$registry_port/$image_name"
 EOF
