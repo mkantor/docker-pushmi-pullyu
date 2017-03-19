@@ -16,7 +16,7 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 IMAGE [USER@]HOSTNAME [ADDITIONAL_SSH_PARAMETERS]
+Usage:	$0 NAME[:TAG] [USER@]HOSTNAME [ADDITIONAL_SSH_PARAMETERS]
 
 Push an image directly to a remote host (without a separate registry)"
 }
