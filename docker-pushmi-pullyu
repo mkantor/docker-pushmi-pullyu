@@ -21,7 +21,7 @@ Usage:	$0 [OPTION...] IMAGE  [USER@]HOSTNAME
 Push an image directly to a remote host (without a separate registry)
 
 Options:
-	-e          specify the remote shell to use"
+	-s, --ssh_opts          specify aditional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
 }
 
 if [ "$#" -lt 2 ]
@@ -34,9 +34,9 @@ fi
 while [ -n "${1+x}" ]
 	do
 		case "$1" in
-	("-e")
+	(-s|--ssh_opts)
 		shift;
-		remote_shell=$1
+		ssh_opts=$1
 		;;
 	(*)
 		if [ -z "${image_name+x}" ]
@@ -54,10 +54,6 @@ while [ -n "${1+x}" ]
 	shift;
 done
 
-if [ -z "${remote_shell+x}" ] 
-then
-	remote_shell="ssh"
-fi
 if [ -z "${image_name+x}" ] 
 then
 	echo "missing argument 'IMAGE'."
@@ -84,7 +80,7 @@ docker tag "$image_name" "$registry_host:$registry_port/$image_name"
 docker push "$registry_host:$registry_port/$image_name"
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-cmd="$remote_shell -R '$registry_port:$registry_host:$registry_port' '$deploy_target' sh"
+cmd="$ssh -R '$registry_port:$registry_host:$registry_port' ${ssh_opts:-} '$deploy_target' sh"
 eval $cmd <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
     && docker tag "$registry_host:$registry_port/$image_name" "$image_name"
