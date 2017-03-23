@@ -16,12 +16,12 @@ cleanup() {
 
 usage() {
   echo "
-Usage:	$0 [OPTION...] NAME[:TAG] [USER@]HOSTNAME
+Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOSTNAME
 
 Push an image directly to a remote host (without a separate registry)
 
 Options:
-	-s, --ssh_opts          specify aditional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
+  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
 }
 
 if [ "$#" -lt 2 ]
@@ -32,38 +32,38 @@ then
 fi
 
 while [ -n "${1+x}" ]
-	do
-		case "$1" in
-	(-s|--ssh_opts)
-		shift;
-		ssh_opts=$1
-		;;
-	(*)
-		if [ -z "${image_name+x}" ]
-		then
-			image_name=$1
-		elif [ -z "${deploy_target+x}" ]
-		then
-			deploy_target=$1
-		else
-			echo "Bad argument: $1" 1>&2
-			exit 64
-		fi
-		;;
-	esac
-	shift;
+do
+  case "$1" in
+    -s|--ssh_opts)
+      shift
+      ssh_opts="$1"
+      ;;
+    *)
+      if [ -z "${image_name+x}" ]
+      then
+        image_name="$1"
+      elif [ -z "${deploy_target+x}" ]
+      then
+        deploy_target="$1"
+      else
+        echo "Bad argument: $1" 1>&2
+        exit 64
+      fi
+      ;;
+  esac
+  shift
 done
 
-if [ -z "${image_name+x}" ] 
+if [ -z "${image_name+x}" ]
 then
-	echo "missing argument 'NAME[:TAG]'."
-	usage
+  echo "missing argument 'NAME[:TAG]'."
+  usage
   exit 1
 fi
-if [ -z "${deploy_target+x}" ] 
+if [ -z "${deploy_target+x}" ]
 then
-	echo "missing argument '[USER@]HOSTNAME'."
-	usage
+  echo "missing argument '[USER@]HOSTNAME'."
+  usage
   exit 1
 fi
 
