@@ -14,6 +14,20 @@ cleanup() {
   fi
 }
 
+flag_error() {
+  local message="$1"
+  echo "$message" >&2
+  usage >&2
+  exit 125
+}
+
+argument_error() {
+  local message="$1"
+  echo "$message" >&2
+  usage >&2
+  exit 1
+}
+
 usage() {
   echo "
 Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOSTNAME
@@ -42,13 +56,11 @@ do
       fi
       if [ -z "$ssh_opts" ]
       then
-        echo "flag needs an argument: $1" 1>&2
-        exit 64
+        flag_error "flag needs an argument: $1"
       fi
       ;;
     -*)
-      echo "unknown flag: $1" 1>&2
-      exit 64
+      flag_error "unknown flag: $1"
       ;;
     *)
       args="$args $1"
@@ -61,9 +73,7 @@ eval set -- "$args"
 
 if [ "$#" -ne 2 ]
 then
-  echo "\"$0\" requires exactly 2 arguments."
-  usage
-  exit 1
+  argument_error "\"$0\" requires exactly 2 arguments."
 fi
 
 image_name="$1"
