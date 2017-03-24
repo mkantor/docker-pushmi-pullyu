@@ -52,6 +52,10 @@ do
         exit 64
       fi
       ;;
+    -*)
+      echo "unknown flag: $1" 1>&2
+      exit 64
+      ;;
     *)
       if [ -z "${image_name+x}" ]
       then
