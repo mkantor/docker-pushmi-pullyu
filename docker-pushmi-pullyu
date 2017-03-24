@@ -24,13 +24,7 @@ Options:
   -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
 }
 
-if [ "$#" -lt 2 ]
-then
-  echo "\"$0\" requires at least 2 arguments."
-  usage
-  exit 1
-fi
-
+args=""
 while [ -n "${1+x}" ]
 do
   case "$1" in
@@ -57,33 +51,23 @@ do
       exit 64
       ;;
     *)
-      if [ -z "${image_name+x}" ]
-      then
-        image_name="$1"
-      elif [ -z "${deploy_target+x}" ]
-      then
-        deploy_target="$1"
-      else
-        echo "Bad argument: $1" 1>&2
-        exit 64
-      fi
+      args="$args $1"
       ;;
   esac
   shift
 done
 
-if [ -z "${image_name+x}" ]
+eval set -- "$args"
+
+if [ "$#" -ne 2 ]
 then
-  echo "missing argument 'NAME[:TAG]'."
+  echo "\"$0\" requires exactly 2 arguments."
   usage
   exit 1
 fi
-if [ -z "${deploy_target+x}" ]
-then
-  echo "missing argument '[USER@]HOSTNAME'."
-  usage
-  exit 1
-fi
+
+image_name="$1"
+deploy_target="$2"
 
 registry_port=5000
 registry_host="localhost"
