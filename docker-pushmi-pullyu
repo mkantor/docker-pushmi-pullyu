@@ -14,23 +14,70 @@ cleanup() {
   fi
 }
 
-usage() {
-  echo "
-Usage:	$0 NAME[:TAG] [USER@]HOSTNAME [ADDITIONAL_SSH_PARAMETERS]
-
-Push an image directly to a remote host (without a separate registry)"
+flag_error() {
+  local message="$1"
+  echo "$message" >&2
+  usage >&2
+  exit 125
 }
 
-if [ "$#" -lt 2 ]
-then
-  echo "\"$0\" requires at least 2 arguments."
-  usage
+argument_error() {
+  local message="$1"
+  echo "$message" >&2
+  usage >&2
   exit 1
+}
+
+usage() {
+  echo "
+Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOSTNAME
+
+Push an image directly to a remote host (without a separate registry)
+
+Options:
+  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
+}
+
+args=""
+while [ -n "${1+x}" ]
+do
+  case "$1" in
+    -s|--ssh_opts|--ssh_opts=*)
+      ssh_opts="${1##--ssh_opts=}"
+      if [ "$ssh_opts" = "$1" ]
+      then
+        if [ "$#" -ge 2 ]
+        then
+          ssh_opts="$2"
+          shift
+        else
+          ssh_opts=""
+        fi
+      fi
+      if [ -z "$ssh_opts" ]
+      then
+        flag_error "flag needs an argument: $1"
+      fi
+      ;;
+    -*)
+      flag_error "unknown flag: $1"
+      ;;
+    *)
+      args="$args $1"
+      ;;
+  esac
+  shift
+done
+
+eval set -- "$args"
+
+if [ "$#" -ne 2 ]
+then
+  argument_error "\"$0\" requires exactly 2 arguments."
 fi
 
-image_name="$1"; shift
-deploy_target="$1"; shift
-ssh_arguments="$@"
+image_name="$1"
+deploy_target="$2"
 
 registry_port=5000
 registry_host="localhost"
@@ -46,7 +93,7 @@ docker push "$registry_host:$registry_port/$image_name"
 docker rmi "$registry_host:$registry_port/$image_name"
 
 echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
-ssh -R "$registry_port:$registry_host:$registry_port" "$deploy_target" $ssh_arguments sh <<EOF
+ssh -R "$registry_port:$registry_host:$registry_port" ${ssh_opts:-} "$deploy_target" sh <<EOF
   docker pull "$registry_host:$registry_port/$image_name" \
     && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
     && docker rmi "$registry_host:$registry_port/$image_name"
