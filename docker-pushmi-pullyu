@@ -30,7 +30,7 @@ argument_error() {
 
 usage() {
   echo "
-Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOSTNAME
+Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOST
 
 Push an image directly to a remote host (without a separate registry)
 
