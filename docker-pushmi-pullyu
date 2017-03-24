@@ -34,9 +34,23 @@ fi
 while [ -n "${1+x}" ]
 do
   case "$1" in
-    -s|--ssh_opts)
-      shift
-      ssh_opts="$1"
+    -s|--ssh_opts|--ssh_opts=*)
+      ssh_opts="${1##--ssh_opts=}"
+      if [ "$ssh_opts" = "$1" ]
+      then
+        if [ "$#" -ge 2 ]
+        then
+          ssh_opts="$2"
+          shift
+        else
+          ssh_opts=""
+        fi
+      fi
+      if [ -z "$ssh_opts" ]
+      then
+        echo "flag needs an argument: $1" 1>&2
+        exit 64
+      fi
       ;;
     *)
       if [ -z "${image_name+x}" ]
