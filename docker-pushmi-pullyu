@@ -30,9 +30,9 @@ argument_error() {
 
 usage() {
   echo "
-Usage:	$0 [OPTIONS] NAME[:TAG] [USER@]HOST
+Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [ NAME[:TAG] ... ]
 
-Push an image directly to a remote host (without a separate registry)
+Push an images directly to a remote host (without a separate registry)
 
 Options:
   -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
@@ -71,13 +71,14 @@ done
 
 eval set -- "$args"
 
-if [ "$#" -ne 2 ]
+if [ "$#" -lt 2 ]
 then
-  argument_error "\"$0\" requires exactly 2 arguments."
+  argument_error "\"$0\" requires at least 2 arguments."
 fi
 
-image_name="$1"
-deploy_target="$2"
+deploy_target="$1"
+shift
+image_names="$*"
 
 registry_port=5000
 registry_host="localhost"
@@ -87,14 +88,19 @@ registry_container_name=$(
   docker run --detach --publish="$registry_port:$registry_port" registry:2
 )
 
-echo "Pushing $image_name to $registry_host:$registry_port..."
-docker tag "$image_name" "$registry_host:$registry_port/$image_name"
-docker push "$registry_host:$registry_port/$image_name"
-docker rmi "$registry_host:$registry_port/$image_name"
+for image_name in $image_names; do
+  echo "Pushing $image_name to $registry_host:$registry_port..."
+  docker tag "$image_name" "$registry_host:$registry_port/$image_name"
+  docker push "$registry_host:$registry_port/$image_name"
+  docker rmi "$registry_host:$registry_port/$image_name"
+done
 
-echo "Pulling $image_name onto $deploy_target from $registry_host:$registry_port..."
+echo "Pulling $image_names onto $deploy_target from $registry_host:$registry_port..."
+
 ssh -R "$registry_port:$registry_host:$registry_port" ${ssh_opts:-} "$deploy_target" sh <<EOF
-  docker pull "$registry_host:$registry_port/$image_name" \
-    && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
-    && docker rmi "$registry_host:$registry_port/$image_name"
+  for image_name in $image_names; do
+    docker pull "$registry_host:$registry_port/$image_name" \
+      && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
+      && docker rmi "$registry_host:$registry_port/$image_name"
+  done
 EOF
