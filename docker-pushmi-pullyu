@@ -32,7 +32,7 @@ usage() {
   echo "
 Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [ NAME[:TAG] ... ]
 
-Push an images directly to a remote host (without a separate registry)
+Push images directly to a remote host (without a separate registry)
 
 Options:
   -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
