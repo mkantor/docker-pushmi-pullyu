@@ -88,19 +88,18 @@ registry_container_name=$(
   docker run --detach --publish="$registry_port:$registry_port" registry:2
 )
 
-for image_name in $image_names; do
-  echo "Pushing $image_name to $registry_host:$registry_port..."
-  docker tag "$image_name" "$registry_host:$registry_port/$image_name"
-  docker push "$registry_host:$registry_port/$image_name"
-  docker rmi "$registry_host:$registry_port/$image_name"
+for source_image_name in $image_names; do
+  echo "Pushing $source_image_name to $registry_host:$registry_port..."
+  docker tag "$source_image_name" "$registry_host:$registry_port/$source_image_name"
+  docker push "$registry_host:$registry_port/$source_image_name"
+  docker rmi "$registry_host:$registry_port/$source_image_name"
 done
 
-echo "Pulling $image_names onto $deploy_target from $registry_host:$registry_port..."
-
 ssh -R "$registry_port:$registry_host:$registry_port" ${ssh_opts:-} "$deploy_target" sh <<EOF
-  for image_name in $image_names; do
-    docker pull "$registry_host:$registry_port/$image_name" \
-      && docker tag "$registry_host:$registry_port/$image_name" "$image_name" \
-      && docker rmi "$registry_host:$registry_port/$image_name"
+  for target_image_name in $image_names; do
+    echo "Pulling \$target_image_name onto $deploy_target from $registry_host:$registry_port..."
+    docker pull "$registry_host:$registry_port/\$target_image_name" \
+      && docker tag "$registry_host:$registry_port/\$target_image_name" "\$target_image_name" \
+      && docker rmi "$registry_host:$registry_port/\$target_image_name"
   done
 EOF
