@@ -38,6 +38,35 @@ argument-error() {
   exit 1
 }
 
+wait-for() {
+  local max_wait_seconds=5
+  local start_time="$SECONDS"
+  local exit_code
+
+  while true
+  do
+    # Run the command being retried and capture the error code. This
+    # awkward incantation ensures correct behavior even if the errexit
+    # option is set.
+    "$@" && exit_code="$?" || exit_code="$?"
+
+    if [ "$exit_code" -eq 0 ] || [ $(($SECONDS - $start_time)) -ge "$max_wait_seconds" ]
+    then
+      break
+    else
+      sleep 0.1
+    fi
+  done
+
+  return "$exit_code"
+}
+
+check-registry() {
+  local registry="$1"
+  # Check if the registry is up.
+  docker login --username="AzureDiamond" --password="hunter2" "$registry" >/dev/null 2>&1
+}
+
 args=""
 while [ -n "${1+x}" ]
 do
@@ -87,6 +116,9 @@ echo "Running a registry at $registry_host:$registry_port..."
 registry_container_name=$(
   docker run --detach --publish="$registry_port:$registry_port" registry:2
 )
+
+wait-for check-registry "$registry_host:$registry_port"
+echo "The registry at $registry_host:$registry_port is now usable."
 
 for source_image_name in $image_names
 do
