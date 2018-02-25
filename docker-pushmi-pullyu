@@ -2,8 +2,18 @@
 set -o errexit
 set -o pipefail
 set -o nounset
-trap 'echo "$0: line $LINENO: exit status of last command: $?" 1>&2' ERR
+trap 'echo "$0: line $LINENO: exit status of last command: $?" >&2' ERR
 trap 'cleanup' EXIT
+
+usage() {
+  echo "
+Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [NAME[:TAG]...]
+
+Push images directly to a remote host (without a separate registry)
+
+Options:
+  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
+}
 
 cleanup() {
   if [ -n "${registry_container_name-}" ] && docker ps -q -f name="$registry_container_name"
@@ -14,28 +24,18 @@ cleanup() {
   fi
 }
 
-flag_error() {
+flag-error() {
   local message="$1"
   echo "$message" >&2
   usage >&2
   exit 125
 }
 
-argument_error() {
+argument-error() {
   local message="$1"
   echo "$message" >&2
   usage >&2
   exit 1
-}
-
-usage() {
-  echo "
-Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [NAME[:TAG]...]
-
-Push images directly to a remote host (without a separate registry)
-
-Options:
-  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
 }
 
 args=""
@@ -56,11 +56,11 @@ do
       fi
       if [ -z "$ssh_opts" ]
       then
-        flag_error "flag needs an argument: $1"
+        flag-error "flag needs an argument: $1"
       fi
       ;;
     -*)
-      flag_error "unknown flag: $1"
+      flag-error "unknown flag: $1"
       ;;
     *)
       args="$args $1"
@@ -73,7 +73,7 @@ eval set -- "$args"
 
 if [ "$#" -lt 2 ]
 then
-  argument_error "\"$0\" requires at least 2 arguments."
+  argument-error "\"$0\" requires at least 2 arguments."
 fi
 
 deploy_target="$1"
