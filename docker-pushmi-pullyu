@@ -50,7 +50,7 @@ wait-for() {
     # option is set.
     "$@" && exit_code="$?" || exit_code="$?"
 
-    if [ "$exit_code" -eq 0 ] || [ $(($SECONDS - $start_time)) -ge "$max_wait_seconds" ]
+    if [ "$exit_code" -eq 0 ] || [ "$($SECONDS - $start_time)" -ge "$max_wait_seconds" ]
     then
       break
     else
@@ -128,6 +128,7 @@ do
   docker rmi "$registry_host:$registry_port/$source_image_name"
 done
 
+# shellcheck disable=SC2087
 ssh -R "$registry_port:$registry_host:$registry_port" ${ssh_opts:-} "$deploy_target" sh <<EOF
   for target_image_name in $image_names
   do
