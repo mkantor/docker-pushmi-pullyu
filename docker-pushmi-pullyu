@@ -50,7 +50,7 @@ wait-for() {
     # option is set.
     "$@" && exit_code="$?" || exit_code="$?"
 
-    if [ "$exit_code" -eq 0 ] || [ "$($SECONDS - $start_time)" -ge "$max_wait_seconds" ]
+    if [ "$exit_code" -eq 0 ] || [ $((SECONDS - start_time)) -ge "$max_wait_seconds" ]
     then
       break
     else
