@@ -110,7 +110,7 @@ shift
 image_names="$*"
 
 registry_port=5000
-registry_host="localhost"
+registry_host="127.0.0.1"
 
 echo "Running a registry at $registry_host:$registry_port..."
 registry_container_name=$(
