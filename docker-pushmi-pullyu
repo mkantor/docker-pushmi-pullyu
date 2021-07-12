@@ -12,7 +12,8 @@ Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [NAME[:TAG]...]
 Push images directly to a remote host (without a separate registry)
 
 Options:
-  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")"
+  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")
+  --no-cache              Do not use a cache for local registry images"
 }
 
 cleanup() {
@@ -67,6 +68,8 @@ check-registry() {
   docker login --username="AzureDiamond" --password="hunter2" "$registry" >/dev/null 2>&1
 }
 
+use_cache=true
+
 args=""
 while [ -n "${1+x}" ]
 do
@@ -87,6 +90,9 @@ do
       then
         flag-error "flag needs an argument: $1"
       fi
+      ;;
+    --no-cache)
+      use_cache=false
       ;;
     -*)
       flag-error "unknown flag: $1"
@@ -112,15 +118,26 @@ image_names="$*"
 registry_port=5000
 registry_host="127.0.0.1"
 
-echo "Running a registry at $registry_host:$registry_port..."
-docker volume create docker-pushmi-pullyu
-registry_container_name=$(
-  docker run \
-    --detach \
-    --volume="docker-pushmi-pullyu:/var/lib/registry" \
-    --publish="$registry_port:$registry_port" \
-    registry:2
-)
+if [ "$use_cache" = true ]
+then
+  echo "Running a registry at $registry_host:$registry_port..."
+  docker volume create docker-pushmi-pullyu
+  registry_container_name=$(
+    docker run \
+      --detach \
+      --volume="docker-pushmi-pullyu:/var/lib/registry" \
+      --publish="$registry_port:$registry_port" \
+      registry:2
+  )
+else
+  echo "Running a registry at $registry_host:$registry_port without using an image cache..."
+  registry_container_name=$(
+    docker run \
+      --detach \
+      --publish="$registry_port:$registry_port" \
+      registry:2
+  )
+fi
 
 wait-for check-registry "$registry_host:$registry_port"
 echo "The registry at $registry_host:$registry_port is now usable."
