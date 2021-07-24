@@ -12,7 +12,7 @@ Usage:	$0 [OPTIONS] [USER@]HOST NAME[:TAG] [NAME[:TAG]...]
 Push images directly to a remote host (without a separate registry)
 
 Options:
-  -s, --ssh_opts string   Specify additional ssh arguments (e.g. --ssh_opts \"-i private.pem -C\")
+  -s, --ssh-opts string   Specify additional ssh arguments (e.g. --ssh-opts \"-i private.pem -C\")
   --no-cache              Do not use a cache for local registry images"
 }
 
@@ -74,8 +74,8 @@ args=""
 while [ -n "${1+x}" ]
 do
   case "$1" in
-    -s|--ssh_opts|--ssh_opts=*)
-      ssh_opts="${1##--ssh_opts=}"
+    -s|--ssh-opts|--ssh-opts=*)
+      ssh_opts="${1##--ssh-opts=}"
       if [ "$ssh_opts" = "$1" ]
       then
         if [ "$#" -ge 2 ]
