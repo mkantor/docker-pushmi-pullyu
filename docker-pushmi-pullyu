@@ -20,8 +20,8 @@ cleanup() {
   if [ -n "${registry_container_name-}" ] && docker ps -q -f name="$registry_container_name"
   then
     echo "Killing the local registry..."
-    docker kill "$registry_container_name" || true
-    docker rm "$registry_container_name" || true
+    docker kill "$registry_container_name" >/dev/null || true
+    docker rm "$registry_container_name" >/dev/null || true
   fi
 }
 
