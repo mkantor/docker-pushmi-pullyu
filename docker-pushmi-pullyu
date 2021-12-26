@@ -19,7 +19,7 @@ Options:
 cleanup() {
   if [ -n "${registry_container_name-}" ] && docker ps -q -f name="$registry_container_name"
   then
-    echo "Killing the registry..."
+    echo "Killing the local registry..."
     docker kill "$registry_container_name" || true
     docker rm "$registry_container_name" || true
   fi
@@ -115,32 +115,37 @@ deploy_target="$1"
 shift
 image_names="$*"
 
-registry_port=5000
+# We need to connect via 127.0.0.1 specifically, otherwise docker tries to use TLS.
 registry_host="127.0.0.1"
 
 if [ "$use_cache" = true ]
 then
-  echo "Running a registry at $registry_host:$registry_port..."
+  echo "Running a local registry..."
   docker volume create docker-pushmi-pullyu
   registry_container_name=$(
     docker run \
       --detach \
       --volume="docker-pushmi-pullyu:/var/lib/registry" \
-      --publish="$registry_port:$registry_port" \
+      --publish-all \
       registry:2
   )
 else
-  echo "Running a registry at $registry_host:$registry_port without using an image cache..."
+  echo "Running a local registry without using an image cache..."
   registry_container_name=$(
     docker run \
       --detach \
-      --publish="$registry_port:$registry_port" \
+      --publish-all \
       registry:2
   )
 fi
 
+registry_port=$(
+  registry_location=$(docker port "$registry_container_name" 5000)
+  echo "${registry_location##0.0.0.0:}"
+)
+
 wait-for check-registry "$registry_host:$registry_port"
-echo "The registry at $registry_host:$registry_port is now usable."
+echo "The local registry is now usable at $registry_host:$registry_port."
 
 for source_image_name in $image_names
 do
