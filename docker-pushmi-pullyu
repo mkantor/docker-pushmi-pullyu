@@ -155,7 +155,7 @@ do
   docker rmi "$registry_host:$registry_port/$source_image_name"
 done
 
-# shellcheck disable=SC2087
+# shellcheck disable=SC2086,SC2087
 ssh -R "$registry_port:$registry_host:$registry_port" ${ssh_opts:-} "$deploy_target" sh <<EOF
   for target_image_name in $image_names
   do
