@@ -126,7 +126,7 @@ then
     docker run \
       --detach \
       --volume="docker-pushmi-pullyu:/var/lib/registry" \
-      --publish 127.0.0.1::5000 \
+      --publish 0.0.0.0::5000 \
       registry:2
   )
 else
@@ -134,14 +134,14 @@ else
   registry_container_name=$(
     docker run \
       --detach \
-      --publish 127.0.0.1::5000 \
+      --publish 0.0.0.0::5000 \
       registry:2
   )
 fi
 
 registry_port=$(
   registry_location=$(docker port "$registry_container_name" 5000)
-  echo "${registry_location##127.0.0.1:}"
+  echo "${registry_location##0.0.0.0:}"
 )
 
 wait-for check-registry "$registry_host:$registry_port"
