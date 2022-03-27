@@ -140,8 +140,13 @@ else
 fi
 
 registry_port=$(
-  registry_location=$(docker port "$registry_container_name" 5000)
-  echo "${registry_location##0.0.0.0:}"
+  docker inspect "$registry_container_name" --format='
+    {{- range $entry := (index .NetworkSettings.Ports "5000/tcp") -}}
+      {{- if eq $entry.HostIp "0.0.0.0" -}}
+        {{- $entry.HostPort -}}
+      {{- end -}}
+    {{- end -}}
+  '
 )
 
 wait-for check-registry "$registry_host:$registry_port"
